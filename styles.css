@@ -1,0 +1,44 @@
+:root {
+  --bg: #0f0f23;
+  --white: #cccccc;
+  --green: #048810;
+  --yellow: #ffff66;
+  --grey: #666666;
+  --font: "Courier New";
+  --padding: 5px;
+}
+body {
+  background-color: var(--bg);
+  margin-top: 10px;
+  margin-left: 50px;
+}
+h1 {
+  font-family: var(--font);
+  color: var(--green);
+}
+h3 {
+  font-family: var(--font);
+  color: var(--green);
+}
+p {
+  font-family: var(--font);
+  color: var(--white);
+}
+th {
+  padding: var(--padding);
+  font-family: var(--font);
+  color: var(--yellow);
+  border: 1px solid var(--grey);
+  border-collapse: collapse;
+  text-align: center;
+  vertical-align: center;
+}
+table, td {
+  padding: var(--padding);
+  font-family: var(--font);
+  color: var(--white);
+  border: 1px solid var(--grey);
+  border-collapse: collapse;
+  text-align: center;
+  vertical-align: center;
+}
