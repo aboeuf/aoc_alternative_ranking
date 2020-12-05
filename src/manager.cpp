@@ -41,22 +41,7 @@ void Manager::replyFinished(QNetworkReply* reply)
 {
   QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
   reply->deleteLater();
-
-  //QString html = ("<!DOCTYPE html><html><title>AOC Alternative Ranking System</title><body>");
-  QString html = "<!DOCTYPE html><html><title>AOC Alternative Ranking System</title><head><link rel=\"stylesheet\" href=\"styles.css\"></head><body><h1>Advent Of Code : classement alternatif </h1><p>Classement alternatif bas&eacute; sur le temps pass&eacute; entre la premi&egrave;re et la deuxi&egrave;me &eacute;toile.<br>Chaque jour le premier prends 6 points, le deuxi&egrave;me 5 points, etc.<br>En cas d'&eacute;galit&eacute; au g&eacute;n&eacute;ral, c'est la somme des d&eacute;lais qui compte.<br>Toutes les propositions de modifications sont les bienvenues.</p>";
-
-  html += LeaderBoard(document).toHtml();
-  html += "</body></html>";
-
-
-  QFile test_file("/mnt/c/Users/aboeuf/Desktop/css/index.php");
-  if (test_file.open(QFile::WriteOnly | QFile::Text)) {
-    QTextStream out(&test_file);
-    out << html;
-    test_file.close();
-  }
-
-  //std::cout << html.toStdString();
+  std::cout << LeaderBoard(document).toHtml().toStdString();
   emit stop();
 }
 
