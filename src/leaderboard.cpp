@@ -4,6 +4,10 @@
 #include <set>
 
 namespace {
+
+constexpr int NB_DAYS = 25;
+constexpr int MAX_WEIGHT = 3;
+
 QString deltaToString(int delta) {
   if (delta < 0)
     return "N/A";
@@ -24,6 +28,17 @@ QString deltaToString(int delta) {
   return delta_str;
 }
 
+double getWeight(int day, int max_nb_days, int max_weigth)
+{
+  double day_f = static_cast<double>(day - 1) / static_cast<double>(max_nb_days - 1);
+  return static_cast<double>(max_weigth) * day;
+}
+
+}
+
+QString DayResult::delta() const
+{
+  return deltaToString(m_delta_s);
 }
 
 bool Member::operator < (const Member& other) const {
@@ -142,7 +157,7 @@ QString LeaderBoard::toHtml()
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
-          .arg(deltaToString(it->second->m_results[day].m_delta_s))
+          .arg(it->second->m_results[day].delta())
           .arg(nb_points);
       --nb_points;
       ++rank;
@@ -153,7 +168,7 @@ QString LeaderBoard::toHtml()
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
-          .arg(deltaToString(it->second->m_results[day].m_delta_s));
+          .arg(it->second->m_results[day].delta());
       ++rank;
     }
     details += "</table></p>";
@@ -178,6 +193,5 @@ QString LeaderBoard::toHtml()
     ++i;
   }
   general += "</table></p>";
-
   return general + details;
 }

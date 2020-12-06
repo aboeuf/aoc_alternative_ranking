@@ -7,6 +7,9 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QTextStream>
+#include <QDir>
+
+#define TEST_BUILD
 
 const QString cookies_path = "/home/aboeuf/.config/aoc_alternative_ranking/cookies.json";
 const QString leaderboard_url = "https://adventofcode.com/2020/leaderboard/private/view/991947.json";
@@ -37,11 +40,54 @@ void Manager::onRun()
   m_manager->get(request);
 }
 
+#ifdef TEST_BUILD
+void exportResult(const QString& result)
+{
+  QFile html_in("../index.php");
+  QString html;
+  if (html_in.open(QFile::ReadOnly | QFile::Text)) {
+    while (!html_in.atEnd()) {
+      QString line(html_in.readLine());
+      while (!line.isEmpty() && (line.endsWith('\n') || line.endsWith(' ')))
+        line.chop(1);
+      line.push_back(' ');
+      while (!line.isEmpty() && line.front() == ' ')
+        line.remove(0, 1);
+      if (!line.isEmpty())
+        html += line;
+    }
+    html_in.close();
+  }
+  html.replace("<?php echo exec('aoc_alternative_ranking'); ?>", result);
+  QDir().mkdir("test_build");
+  QFile html_out("test_build/index.php");
+  if (html_out.open(QFile::WriteOnly | QFile::Text)) {
+    QTextStream out;
+    out << html;
+    html_out.close();
+  }
+  QFile css_in("../styles.css");
+  if (css_in.open(QFile::ReadOnly | QFile::Text)) {
+    QFile css_out("test_build/styles.css");
+    if (css_out.open(QFile::WriteOnly | QFile::Text)) {
+      QTextStream out;
+      out << css_in.readAll();
+      css_out.close();
+    }
+    css_in.close();
+  }
+}
+#endif
+
 void Manager::replyFinished(QNetworkReply* reply)
 {
   QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
   reply->deleteLater();
+#ifdef TEST_BUILD
+  exportResult(LeaderBoard(document).toHtml());
+#else
   std::cout << LeaderBoard(document).toHtml().toStdString();
+#endif
   emit stop();
 }
 
