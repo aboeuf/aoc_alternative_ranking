@@ -28,10 +28,10 @@ QString deltaToString(int delta) {
   return delta_str;
 }
 
-double getWeight(int day, int max_nb_days, int max_weigth)
+double getWeight(int day, int max_nb_days = NB_DAYS, int max_weigth = MAX_WEIGHT)
 {
   double day_f = static_cast<double>(day - 1) / static_cast<double>(max_nb_days - 1);
-  return static_cast<double>(max_weigth) * day;
+  return static_cast<double>(max_weigth - 1) * day_f + 1.0;
 }
 
 }
@@ -42,17 +42,32 @@ QString DayResult::delta() const
 }
 
 bool Member::operator < (const Member& other) const {
-  if (points() == other.points())
+  if (score() == other.score())
     return totalDelta() < other.totalDelta();
-  return points() > other.points();
+  return score() > other.score();
+}
+
+double Member::score() const
+{
+  double total = 0;
+  for(const int& day : m_results.keys())
+    total += score(day);
+  return total;
+}
+
+double Member::score(int day) const
+{
+ if (m_results.contains(day))
+   return getWeight(day) * m_results[day].m_points;
+ return 0.0;
 }
 
 int Member::points() const
 {
-  int points = 0;
+  int total = 0;
   for(const DayResult& res : m_results.values())
-    points += res.m_points;
-  return points;
+    total += res.m_points;
+  return total;
 }
 
 int Member::totalDelta() const
@@ -130,13 +145,14 @@ QString LeaderBoard::toHtml()
   QString general, details;
 
   for (int day = m_day_max; day > 0; --day) {
-    details += QString("<p><h3>Classement jour %1</h3><table><tr>"
+    details += QString("<p><h3>Classement jour %1 (x %2)</h3><table><tr>"
                        "<th>Rang</th>"
                        "<th>Joueur</th>"
                        "<th>*</th>"
                        "<th>**</th>"
                        "<th>D&eacute;lai</th>"
-                       "<th>Points</th></tr>").arg(day);
+                       "<th>Points</th>"
+                       "<th>Score</th></tr>").arg(day).arg(getWeight(day), 0, 'f', 2);
     std::multimap<int, Member*> sorted;
     std::map<std::string, Member*> na;
     for (Member& member : m_members)
@@ -152,18 +168,19 @@ QString LeaderBoard::toHtml()
     int rank = 1;
     for (auto it = sorted.begin(); it != sorted.end(); ++it) {
       it->second->m_results[day].m_points = nb_points;
-      details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td></tr>")
+      details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td><td>%7</td></tr>")
           .arg(rank)
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
           .arg(it->second->m_results[day].delta())
-          .arg(nb_points);
+          .arg(nb_points)
+          .arg(it->second->score(day), 0, 'f', 2);
       --nb_points;
       ++rank;
     }
     for (auto it = na.begin(); it != na.end(); ++it) {
-      details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>0</td></tr>")
+      details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>0</td><td>0.00</td></tr>")
           .arg(rank)
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
@@ -180,7 +197,7 @@ QString LeaderBoard::toHtml()
   general = QString("<p><h3>Classement General</h3><table><tr>"
                     "<th>Rang</th>"
                     "<th>Joueur</th>"
-                    "<th>Points</th>"
+                    "<th>Score</th>"
                     "<th>D&eacute;lai Total</th></tr>"
                     );
   int i = 1;
@@ -188,7 +205,7 @@ QString LeaderBoard::toHtml()
     general += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>")
         .arg(i)
         .arg(member.m_name)
-        .arg(member.points())
+        .arg(member.score(), 0, 'f', 2)
         .arg(member.delta());
     ++i;
   }
