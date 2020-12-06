@@ -17,6 +17,8 @@ struct DayResult
 struct Member
 {
   bool operator < (const Member& other) const;
+  double score() const;
+  double score(int day) const;
   int points() const;
   int totalDelta() const;
   QString delta() const;
