@@ -9,7 +9,7 @@
 #include <QTextStream>
 #include <QDir>
 
-//#define TEST_BUILD
+#define TEST_BUILD
 
 const QString cookies_path = "/home/aboeuf/.config/aoc_alternative_ranking/cookies.json";
 const QString leaderboard_url = "https://adventofcode.com/2020/leaderboard/private/view/991947.json";

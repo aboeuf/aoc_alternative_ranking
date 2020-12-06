@@ -7,10 +7,10 @@
 
 struct DayResult
 {
-  QString delta() const;
+  QString delay() const;
   QString m_first{"N/A"};
   QString m_second{"N/A"};
-  int m_delta_s{-1};
+  int m_delay_s{-1};
   int m_points{0};
 };
 
@@ -20,8 +20,8 @@ struct Member
   double score() const;
   double score(int day) const;
   int points() const;
-  int totalDelta() const;
-  QString delta() const;
+  int totaldelay() const;
+  QString delay() const;
   QString m_name;
   QMap<int, DayResult> m_results;
 };

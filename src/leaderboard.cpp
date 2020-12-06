@@ -8,24 +8,24 @@ namespace {
 constexpr int NB_DAYS = 25;
 constexpr int MAX_WEIGHT = 3;
 
-QString deltaToString(int delta) {
-  if (delta < 0)
+QString delayToString(int delay) {
+  if (delay < 0)
     return "N/A";
-  QString delta_str = "";
-  int days = delta / 86400;
+  QString delay_str = "";
+  int days = delay / 86400;
   if (days > 0)
-    delta_str = QString("%1d").arg(days);
-  delta -= 86400 * days;
-  int hours = delta / 3600;
-  if (hours > 0 || !delta_str.isEmpty())
-    delta_str += QString(" %1h").arg(hours);
-  delta -= 3600 * hours;
-  int minutes = delta / 60;
-  if (minutes > 0 || !delta_str.isEmpty())
-    delta_str += QString(" %1m").arg(minutes);
-  delta -= 60 * minutes;
-  delta_str += QString(" %1s").arg(delta);
-  return delta_str;
+    delay_str = QString("%1d").arg(days);
+  delay -= 86400 * days;
+  int hours = delay / 3600;
+  if (hours > 0 || !delay_str.isEmpty())
+    delay_str += QString(" %1h").arg(hours);
+  delay -= 3600 * hours;
+  int minutes = delay / 60;
+  if (minutes > 0 || !delay_str.isEmpty())
+    delay_str += QString(" %1m").arg(minutes);
+  delay -= 60 * minutes;
+  delay_str += QString(" %1s").arg(delay);
+  return delay_str;
 }
 
 double getWeight(int day, int max_nb_days = NB_DAYS, int max_weigth = MAX_WEIGHT)
@@ -36,14 +36,14 @@ double getWeight(int day, int max_nb_days = NB_DAYS, int max_weigth = MAX_WEIGHT
 
 }
 
-QString DayResult::delta() const
+QString DayResult::delay() const
 {
-  return deltaToString(m_delta_s);
+  return delayToString(m_delay_s);
 }
 
 bool Member::operator < (const Member& other) const {
   if (score() == other.score())
-    return totalDelta() < other.totalDelta();
+    return totaldelay() < other.totaldelay();
   return score() > other.score();
 }
 
@@ -58,7 +58,7 @@ double Member::score() const
 double Member::score(int day) const
 {
  if (m_results.contains(day))
-   return getWeight(day) * m_results[day].m_points;
+   return getWeight(day) * static_cast<double>(m_results[day].m_points);
  return 0.0;
 }
 
@@ -70,17 +70,17 @@ int Member::points() const
   return total;
 }
 
-int Member::totalDelta() const
+int Member::totaldelay() const
 {
   int total = 0;
   for (const DayResult& res : m_results.values())
-    total += res.m_delta_s;
+    total += res.m_delay_s;
   return total;
 }
 
-QString Member::delta() const
+QString Member::delay() const
 {
-  return deltaToString(totalDelta());
+  return delayToString(totaldelay());
 }
 
 LeaderBoard::LeaderBoard(const QJsonDocument& document)
@@ -131,7 +131,7 @@ LeaderBoard::LeaderBoard(const QJsonDocument& document)
         }
       }
       if (t1 && t2)
-        result.m_delta_s = t1_dt.secsTo(t2_dt);
+        result.m_delay_s = t1_dt.secsTo(t2_dt);
       member.m_results[day] = result;
     }
     m_members << member;
@@ -145,38 +145,60 @@ QString LeaderBoard::toHtml()
   QString general, details;
 
   for (int day = m_day_max; day > 0; --day) {
-    details += QString("<p><h3>Classement jour %1 (x %2)</h3><table><tr>"
+    int mean_delay = 0;
+    int min_delay = std::numeric_limits<int>::max();
+    int max_delay = std::numeric_limits<int>::min();
+    int nb_delay = 0;
+    std::multimap<int, Member*> sorted;
+    std::map<std::string, Member*> na;
+    for (Member& member : m_members) {
+      if (!member.m_results.contains(day))
+        member.m_results[day] = DayResult();
+      if (member.m_results[day].m_delay_s >= 0) {
+        sorted.insert(std::pair<int, Member*>(member.m_results[day].m_delay_s, &member));
+        mean_delay += member.m_results[day].m_delay_s;
+        ++nb_delay;
+        min_delay = std::min(member.m_results[day].m_delay_s, min_delay);
+        max_delay = std::max(member.m_results[day].m_delay_s, max_delay);
+      }
+      else
+        na[member.m_name.toStdString()] = &member;
+    }
+    int range = max_delay - min_delay;
+    mean_delay = nb_delay == 0 ? -1 : mean_delay / nb_delay;
+    details += QString("<h3>Classement jour %1 (x %2)</h3>"
+                       "<p>D&eacute;lai moyen : %3</p><table><tr>"
                        "<th>Rang</th>"
                        "<th>Joueur</th>"
                        "<th>*</th>"
                        "<th>**</th>"
                        "<th>D&eacute;lai</th>"
                        "<th>Points</th>"
-                       "<th>Score</th></tr>").arg(day).arg(getWeight(day), 0, 'f', 2);
-    std::multimap<int, Member*> sorted;
-    std::map<std::string, Member*> na;
-    for (Member& member : m_members)
-    {
-      if (!member.m_results.contains(day))
-        member.m_results[day] = DayResult();
-      if (member.m_results[day].m_delta_s >= 0)
-        sorted.insert(std::pair<int, Member*>(member.m_results[day].m_delta_s, &member));
-      else
-        na[member.m_name.toStdString()] = &member;
-    }
-    int nb_points = m_members.size();
+                       "<th>Score</th></tr>")
+        .arg(day)
+        .arg(getWeight(day), 0, 'f', 2)
+        .arg(delayToString(mean_delay));
     int rank = 1;
+    int nb_points = m_members.size();
     for (auto it = sorted.begin(); it != sorted.end(); ++it) {
-      it->second->m_results[day].m_points = nb_points;
+      QString delta_to_mean_str = "N/A";
+      if (mean_delay >= 0)
+      {
+        int delta_to_mean = mean_delay - it->second->m_results[day].m_delay_s;
+        if (delta_to_mean < 0)
+          delta_to_mean_str = "- " + delayToString(-delta_to_mean);
+        else
+          delta_to_mean_str = "+ " + delayToString(delta_to_mean);
+        it->second->m_results[day].m_points = nb_points--;
+      }
       details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td><td>%7</td></tr>")
           .arg(rank)
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
-          .arg(it->second->m_results[day].delta())
-          .arg(nb_points)
+          .arg(it->second->m_results[day].delay())
+          .arg(it->second->m_results[day].m_points)
           .arg(it->second->score(day), 0, 'f', 2);
-      --nb_points;
       ++rank;
     }
     for (auto it = na.begin(); it != na.end(); ++it) {
@@ -185,30 +207,28 @@ QString LeaderBoard::toHtml()
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
-          .arg(it->second->m_results[day].delta());
+          .arg(it->second->m_results[day].delay());
       ++rank;
     }
-    details += "</table></p>";
+    details += "</table>";
   }
 
   std::set<Member> general_ranking;
   for (Member& member : m_members)
     general_ranking.insert(member);
-  general = QString("<p><h3>Classement General</h3><table><tr>"
+  general = QString("<h3>Classement General</h3><table><tr>"
                     "<th>Rang</th>"
                     "<th>Joueur</th>"
-                    "<th>Score</th>"
-                    "<th>D&eacute;lai Total</th></tr>"
+                    "<th>Score</th></tr>"
                     );
   int i = 1;
   for (const Member& member : general_ranking) {
-    general += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>")
+    general += QString("<tr><td>%1</td><td>%2</td><td>%3</td></tr>")
         .arg(i)
         .arg(member.m_name)
-        .arg(member.score(), 0, 'f', 2)
-        .arg(member.delta());
+        .arg(member.score(), 0, 'f', 2);
     ++i;
   }
-  general += "</table></p>";
+  general += "</table>";
   return general + details;
 }
