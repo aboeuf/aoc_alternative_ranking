@@ -164,7 +164,6 @@ QString LeaderBoard::toHtml()
       else
         na[member.m_name.toStdString()] = &member;
     }
-    int range = max_delay - min_delay;
     mean_delay = nb_delay == 0 ? -1 : mean_delay / nb_delay;
     details += QString("<h3>Classement jour %1 (x %2)</h3>"
                        "<p>D&eacute;lai moyen : %3</p><table><tr>"
@@ -202,13 +201,11 @@ QString LeaderBoard::toHtml()
       ++rank;
     }
     for (auto it = na.begin(); it != na.end(); ++it) {
-      details += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>0</td><td>0.00</td></tr>")
-          .arg(rank)
+      details += QString("<tr><td>N/A</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>0</td><td>0.00</td></tr>")
           .arg(it->second->m_name)
           .arg(it->second->m_results[day].m_first)
           .arg(it->second->m_results[day].m_second)
           .arg(it->second->m_results[day].delay());
-      ++rank;
     }
     details += "</table>";
   }
