@@ -11,7 +11,7 @@ class Manager : public QObject
   Q_OBJECT
 
 public:
-  Manager();
+  Manager(bool test_run);
   ~Manager();
 
 signals:
@@ -25,6 +25,7 @@ private slots:
 private:
   QString getCookies();
   QNetworkAccessManager *m_manager;
+  bool m_test_run{false};
 };
 
 #endif // MANAGER_H

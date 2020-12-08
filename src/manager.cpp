@@ -9,12 +9,10 @@
 #include <QTextStream>
 #include <QDir>
 
-#define TEST_BUILD
-
 const QString cookies_path = "/home/aboeuf/.config/aoc_alternative_ranking/cookies.json";
 const QString leaderboard_url = "https://adventofcode.com/2020/leaderboard/private/view/991947.json";
 
-Manager::Manager()
+Manager::Manager(bool test_run) : m_test_run{test_run}
 {
   m_manager = new QNetworkAccessManager(this);
   connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyFinished(QNetworkReply*)), Qt::QueuedConnection);
@@ -40,7 +38,6 @@ void Manager::onRun()
   m_manager->get(request);
 }
 
-#ifdef TEST_BUILD
 void exportResult(const QString& result)
 {
   QFile html_in("../index.php");
@@ -59,7 +56,7 @@ void exportResult(const QString& result)
   }
   html.replace("<?phpecho exec('aoc_alternative_ranking');?>", result);
   QDir().mkdir("test_build");
-  QFile html_out("test_build/index.php");
+  QFile html_out("test_build/index.html");
   if (html_out.open(QFile::WriteOnly | QFile::Text)) {
     QTextStream out(&html_out);
     out << html;
@@ -76,17 +73,15 @@ void exportResult(const QString& result)
     css_in.close();
   }
 }
-#endif
 
 void Manager::replyFinished(QNetworkReply* reply)
 {
   QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
   reply->deleteLater();
-#ifdef TEST_BUILD
-  exportResult(LeaderBoard(document).toHtml());
-#else
-  std::cout << LeaderBoard(document).toHtml().toStdString();
-#endif
+  if (m_test_run)
+    exportResult(LeaderBoard(document).toHtml());
+  else
+    std::cout << LeaderBoard(document).toHtml().toStdString();
   emit stop();
 }
 
