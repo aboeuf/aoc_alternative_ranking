@@ -30,6 +30,8 @@ QString delayToString(int delay) {
 
 double getWeight(int day, int max_nb_days = NB_DAYS, int max_weigth = MAX_WEIGHT)
 {
+  if (day == 25)
+    return 0.0;
   double day_f = static_cast<double>(day - 1) / static_cast<double>(max_nb_days - 1);
   return static_cast<double>(max_weigth - 1) * day_f + 1.0;
 }
